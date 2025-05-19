@@ -1,0 +1,2258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health & Wellness Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.11.4/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #f97316;
+            --tertiary-color: #10b981;
+            --light-color: #f3f4f6;
+            --dark-color: #1f2937;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
+            --success-color: #10b981;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+            color: #1f2937;
+            overflow-x: hidden;
+        }
+
+        .section {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .section:hover {
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Mood Tracker Styles */
+        .mood-emoji {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            font-size: 1.8rem;
+            margin: 0 0.5rem;
+        }
+        
+        .mood-emoji:hover {
+            transform: scale(1.2);
+        }
+        
+        .mood-emoji.selected {
+            transform: scale(1.3);
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .calendar-day:hover {
+            transform: scale(1.05);
+        }
+        
+        .calendar-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #374151;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        
+        .calendar-day:hover .calendar-tooltip {
+            opacity: 1;
+        }
+
+        /* Water Tracker Styles */
+        .water-cup {
+            position: relative;
+            width: 40px;
+            height: 50px;
+            border: 2px solid #3b82f6;
+            border-radius: 0 0 10px 10px;
+            margin: 0 0.25rem;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        
+        .water-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 0%;
+            background-color: #3b82f6;
+            transition: height 0.5s ease;
+        }
+        
+        .water-cup.filled .water-fill {
+            height: 100%;
+        }
+        
+        .progress-ring {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+        
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.5s ease;
+            transform: rotate(-90deg);
+            transform-origin: center;
+        }
+
+        /* Breathing Animation Styles */
+        .breathing-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #4f46e5 0%, #a5b4fc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            transition: transform 4s ease, background 4s ease;
+        }
+        
+        .breathing-circle.inhale {
+            transform: scale(1.3);
+            background: radial-gradient(circle, #4f46e5 0%, #818cf8 100%);
+        }
+        
+        .breathing-circle.hold {
+            transition: transform 0.5s ease, background 0.5s ease;
+        }
+        
+        .breathing-circle.exhale {
+            transform: scale(1);
+            background: radial-gradient(circle, #6366f1 0%, #a5b4fc 100%);
+        }
+        
+        .breathing-bg {
+            background: linear-gradient(45deg, #f0f9ff 0%, #e0f2fe 100%);
+            transition: background 4s ease;
+            border-radius: 12px;
+        }
+        
+        .breathing-bg.inhale {
+            background: linear-gradient(45deg, #e0f2fe 0%, #bfdbfe 100%);
+        }
+        
+        .breathing-bg.exhale {
+            background: linear-gradient(45deg, #bfdbfe 0%, #e0f2fe 100%);
+        }
+
+        /* Meal Log Styles */
+        .meal-card {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            background-color: #f9fafb;
+            border-left: 4px solid #4f46e5;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .meal-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .meal-card.new {
+            animation: slideIn 0.5s ease forwards;
+        }
+        
+        .calorie-counter {
+            font-size: 1.8rem;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        /* Sleep Tracker Styles */
+        .sleep-bar {
+            height: 120px;
+            display: flex;
+            align-items: flex-end;
+            padding-top: 1rem;
+        }
+        
+        .sleep-day {
+            flex: 1;
+            margin: 0 3px;
+            border-radius: 6px 6px 0 0;
+            background: linear-gradient(180deg, #4f46e5 0%, #818cf8 100%);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .sleep-day:hover {
+            transform: scaleY(1.05);
+        }
+        
+        .sleep-tooltip {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #374151;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        
+        .sleep-day:hover .sleep-tooltip {
+            opacity: 1;
+        }
+
+        /* Fitness Routine Styles */
+        .fitness-item {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            background-color: #f9fafb;
+            border-left: 4px solid #f97316;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.3s ease;
+        }
+        
+        .fitness-item:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .fitness-item.completed {
+            border-left-color: #10b981;
+            background-color: #f0fdf4;
+        }
+        
+        .timer-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid #e5e7eb;
+            position: relative;
+        }
+        
+        .timer-fill {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: calc(100% - 4px);
+            height: calc(100% - 4px);
+            border-radius: 50%;
+            background-color: #f97316;
+            transform: scale(0);
+            transform-origin: center;
+            transition: transform 1s linear;
+        }
+        
+        .workout-progress {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #e5e7eb;
+        }
+        
+        .workout-progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            background-color: #4f46e5;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* Stretch Routine Styles */
+        .stretch-item {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            background-color: #f9fafb;
+            border-left: 4px solid #10b981;
+            cursor: move;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .stretch-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stretch-item.sortable-ghost {
+            opacity: 0.5;
+        }
+        
+        .stretch-item.sortable-chosen {
+            background-color: #f0fdf4;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Journal Styles */
+        .journal-textarea {
+            min-height: 100px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            width: 100%;
+            transition: min-height 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .journal-textarea:focus {
+            min-height: 200px;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+        }
+        
+        .tag-chip {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .tag-chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tag-chip.selected {
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Weight Tracker Styles */
+        .weight-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.5rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .weight-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+        }
+        
+        .unit-selector {
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+        }
+        
+        .unit-option {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            background-color: #f3f4f6;
+            transition: background-color 0.3s ease;
+        }
+        
+        .unit-option.selected {
+            background-color: #4f46e5;
+            color: white;
+        }
+
+        /* Dashboard Styles */
+        .dashboard-card {
+            padding: 1rem;
+            border-radius: 12px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e5e7eb;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #4f46e5;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Confetti Animation */
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: #f97316;
+            z-index: 1000;
+            animation: confetti-fall 3s linear forwards;
+        }
+
+        /* Navigation */
+        .nav-link {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background-color: #f3f4f6;
+            color: #4f46e5;
+        }
+        
+        .nav-icon {
+            margin-right: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        /* Responsive fixes */
+        @media (max-width: 640px) {
+            .calendar-grid {
+                gap: 2px;
+            }
+            
+            .calendar-day {
+                font-size: 0.7rem;
+            }
+            
+            .water-cup {
+                width: 30px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Health & Wellness Tracker</h1>
+            <p class="text-gray-600">Track, analyze, and improve your daily wellness journey</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Mood Tracker -->
+                <section id="mood-tracker" class="section">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Mood Tracker</h2>
+                    <div class="mb-4">
+                        <p class="text-gray-600 mb-2">How are you feeling today?</p>
+                        <div class="flex justify-center mb-4">
+                            <div class="mood-emoji" data-mood="great" data-value="5">😁</div>
+                            <div class="mood-emoji" data-mood="good" data-value="4">🙂</div>
+                            <div class="mood-emoji" data-mood="neutral" data-value="3">😐</div>
+                            <div class="mood-emoji" data-mood="sad" data-value="2">😔</div>
+                            <div class="mood-emoji" data-mood="terrible" data-value="1">😢</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <button id="prev-month" class="text-gray-600 hover:text-gray-900">
+                                <i class="bx bx-chevron-left"></i>
+                            </button>
+                            <h3 id="current-month" class="text-lg font-medium">July 2023</h3>
+                            <button id="next-month" class="text-gray-600 hover:text-gray-900">
+                                <i class="bx bx-chevron-right"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="calendar-grid mb-2">
+                            <div class="text-center text-gray-600 font-medium">Sun</div>
+                            <div class="text-center text-gray-600 font-medium">Mon</div>
+                            <div class="text-center text-gray-600 font-medium">Tue</div>
+                            <div class="text-center text-gray-600 font-medium">Wed</div>
+                            <div class="text-center text-gray-600 font-medium">Thu</div>
+                            <div class="text-center text-gray-600 font-medium">Fri</div>
+                            <div class="text-center text-gray-600 font-medium">Sat</div>
+                        </div>
+                        
+                        <div id="calendar-days" class="calendar-grid">
+                            <!-- Calendar days will be inserted here by JavaScript -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Water Intake Tracker -->
+                <section id="water-tracker" class="section">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Water Intake Tracker</h2>
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="progress-ring">
+                                <svg width="120" height="120" viewBox="0 0 120 120">
+                                    <circle cx="60" cy="60" r="50" stroke="#e5e7eb" stroke-width="10" fill="none" />
+                                    <circle id="progress-ring-circle" cx="60" cy="60" r="50" stroke="#3b82f6" stroke-width="10" fill="none" stroke-dasharray="314" stroke-dashoffset="314" />
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center flex-col">
+                                    <span id="water-count" class="text-3xl font-bold text-gray-800">0</span>
+                                    <span class="text-gray-600 text-sm">/ 8 cups</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-wrap justify-center">
+                            <div id="water-cups" class="flex flex-wrap justify-center gap-2">
+                                <div class="water-cup" data-cup="1">
+                                    <div class="water-fill"></div>
+                                </div>
+                                <div class="water-cup" data-cup="2">
+                                    <div class="water-fill"></div>
+                                </div>
+                                <div class="water-cup" data-cup="3">
+                                    <div class="water-fill"></div>
+                                </div>
+                                <div class="water-cup" data-cup="4">
+                                    <div class="water-fill"></div>
+                                </div>
+                                <div class="water-cup" data-cup="5">
+                                    <div class="water-fill"></div>
+                                </div>
+                                <div class="water-cup" data-cup="6">
+                                    <div class="water-fill"></div>
+                                </div>
+                                <div class="water-cup" data-cup="7">
+                                    <div class="water-fill"></div>
+                                </div>
+                                <div class="water-cup" data-cup="8">
+                                    <div class="water-fill"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-gray-600">Click on the cups to track your water intake. Goal: 8 cups per day.</p>
+                    </div>
+                </section>
+
+                <!-- Breathing Exercise -->
+                <section id="breathing-exercise" class="section breathing-bg">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Breathing Exercise</h2>
+                    
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                        <div class="flex flex-col items-center mb-6 md:mb-0">
+                            <div id="breathing-circle" class="breathing-circle">
+                                <span id="breathing-text">Start</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg shadow-sm">
+                            <h3 class="font-medium mb-2">Breathing Techniques</h3>
+                            <div class="space-y-2">
+                                <div class="flex items-center">
+                                    <input type="radio" id="technique-box" name="breathing-technique" value="box" checked class="mr-2">
+                                    <label for="technique-box">Box Breathing (4-4-4-4)</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="radio" id="technique-478" name="breathing-technique" value="478" class="mr-2">
+                                    <label for="technique-478">4-7-8 Breathing</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="radio" id="technique-calm" name="breathing-technique" value="calm" class="mr-2">
+                                    <label for="technique-calm">Calm Breathing (4-2)</label>
+                                </div>
+                            </div>
+                            
+                            <button id="start-breathing" class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300">
+                                Start Exercise
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Meal Log & Calorie Summary -->
+                <section id="meal-log" class="section">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Meal Log & Calories</h2>
+                    
+                    <div class="flex justify-between mb-6">
+                        <div class="text-center">
+                            <p class="text-gray-600">Daily Goal</p>
+                            <p class="text-2xl font-bold" id="calorie-goal">2000</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-gray-600">Consumed</p>
+                            <p class="text-2xl font-bold calorie-counter" id="calories-consumed">0</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-gray-600">Remaining</p>
+                            <p class="text-2xl font-bold" id="calories-remaining">2000</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <form id="meal-form" class="bg-gray-50 p-4 rounded-lg">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-gray-700 mb-1">Meal Name</label>
+                                    <input type="text" id="meal-name" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 mb-1">Calories</label>
+                                    <input type="number" id="meal-calories" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-gray-700 mb-1">Time</label>
+                                    <input type="time" id="meal-time" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 mb-1">Meal Type</label>
+                                    <select id="meal-type" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="breakfast">Breakfast 🍳</option>
+                                        <option value="lunch">Lunch 🥗</option>
+                                        <option value="dinner">Dinner 🍽️</option>
+                                        <option value="snack">Snack 🍎</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300">
+                                Add Meal
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div id="meal-list" class="space-y-4">
+                        <!-- Meal entries will be inserted here -->
+                    </div>
+                </section>
+
+                <!-- Sleep Tracker -->
+                <section id="sleep-tracker" class="section">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Sleep Tracker</h2>
+                    
+                    <div class="mb-6">
+                        <form id="sleep-form" class="bg-gray-50 p-4 rounded-lg mb-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-700 mb-1">Hours Slept</label>
+                                    <input type="number" id="sleep-hours" min="0" max="24" step="0.5" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 mb-1">Sleep Quality</label>
+                                    <select id="sleep-quality" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="excellent">Excellent 😴</option>
+                                        <option value="good">Good 🙂</option>
+                                        <option value="fair">Fair 😐</option>
+                                        <option value="poor">Poor 😴</option>
+                                        <option value="terrible">Terrible 😫</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="mt-4 w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300">
+                                Log Sleep
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <h3 class="font-medium mb-2">Last 7 Days</h3>
+                    <div class="sleep-bar" id="sleep-chart">
+                        <!-- Sleep bars will be inserted here -->
+                    </div>
+                    <div class="flex justify-between mt-2">
+                        <span class="text-xs text-gray-600">Sun</span>
+                        <span class="text-xs text-gray-600">Mon</span>
+                        <span class="text-xs text-gray-600">Tue</span>
+                        <span class="text-xs text-gray-600">Wed</span>
+                        <span class="text-xs text-gray-600">Thu</span>
+                        <span class="text-xs text-gray-600">Fri</span>
+                        <span class="text-xs text-gray-600">Sat</span>
+                    </div>
+                </section>
+
+                <!-- Fitness Routine -->
+                <section id="fitness-routine" class="section">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Fitness Routine</h2>
+                    
+                    <div id="workout-controls" class="mb-6 flex justify-between items-center">
+                        <button id="start-workout" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition duration-300">
+                            Start Workout
+                        </button>
+                        
+                        <div id="workout-progress-container" class="hidden w-full ml-4">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm text-gray-600">Progress</span>
+                                <span class="text-sm text-gray-600" id="workout-progress-text">0/0</span>
+                            </div>
+                            <div class="workout-progress">
+                                <div class="workout-progress-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="fitness-list">
+                        <div class="fitness-item" data-duration="30">
+                            <div class="flex items-center">
+                                <input type="checkbox" class="mr-3 h-5 w-5 text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <h3 class="font-medium">Jumping Jacks</h3>
+                                    <p class="text-sm text-gray-600">30 seconds</p>
+                                </div>
+                            </div>
+                            <div class="timer-circle">
+                                <div class="timer-fill"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="fitness-item" data-duration="45">
+                            <div class="flex items-center">
+                                <input type="checkbox" class="mr-3 h-5 w-5 text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <h3 class="font-medium">Push-ups</h3>
+                                    <p class="text-sm text-gray-600">45 seconds</p>
+                                </div>
+                            </div>
+                            <div class="timer-circle">
+                                <div class="timer-fill"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="fitness-item" data-duration="60">
+                            <div class="flex items-center">
+                                <input type="checkbox" class="mr-3 h-5 w-5 text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <h3 class="font-medium">Plank</h3>
+                                    <p class="text-sm text-gray-600">60 seconds</p>
+                                </div>
+                            </div>
+                            <div class="timer-circle">
+                                <div class="timer-fill"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="fitness-item" data-duration="30">
+                            <div class="flex items-center">
+                                <input type="checkbox" class="mr-3 h-5 w-5 text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <h3 class="font-medium">Squats</h3>
+                                    <p class="text-sm text-gray-600">30 seconds</p>
+                                </div>
+                            </div>
+                            <div class="timer-circle">
+                                <div class="timer-fill"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="fitness-item" data-duration="45">
+                            <div class="flex items-center">
+                                <input type="checkbox" class="mr-3 h-5 w-5 text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <h3 class="font-medium">Mountain Climbers</h3>
+                                    <p class="text-sm text-gray-600">45 seconds</p>
+                                </div>
+                            </div>
+                            <div class="timer-circle">
+                                <div class="timer-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Stretch Routine -->
+                <section id="stretch-routine" class="section">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Stretch Routine</h2>
+                    <p class="text-gray-600 mb-4">Drag to reorder your stretching routine</p>
+                    
+                    <div id="stretch-list" class="mb-4">
+                        <div class="stretch-item" data-duration="30">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="font-medium">Neck Stretch</h3>
+                                    <p class="text-sm text-gray-600">30 seconds</p>
+                                </div>
+                                <i class="bx bx-menu text-gray-400"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="stretch-item" data-duration="40">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="font-medium">Arm & Shoulder Stretch</h3>
+                                    <p class="text-sm text-gray-600">40 seconds</p>
+                                </div>
+                                <i class="bx bx-menu text-gray-400"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="stretch-item" data-duration="60">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="font-medium">Hamstring Stretch</h3>
+                                    <p class="text-sm text-gray-600">60 seconds</p>
+                                </div>
+                                <i class="bx bx-menu text-gray-400"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="stretch-item" data-duration="45">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="font-medium">Quad Stretch</h3>
+                                    <p class="text-sm text-gray-600">45 seconds</p>
+                                </div>
+                                <i class="bx bx-menu text-gray-400"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="stretch-item" data-duration="30">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="font-medium">Calf Stretch</h3>
+                                    <p class="text-sm text-gray-600">30 seconds</p>
+                                </div>
+                                <i class="bx bx-menu text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="start-stretch" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300">
+                        Start Stretch Routine
+                    </button>
+                </section>
+            </div>
+            
+            <!-- Right Column -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Mental Health Journal -->
+                <section id="mental-health-journal" class="section">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Mental Health Journal</h2>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">Today's Thoughts</label>
+                        <textarea id="journal-text" class="journal-textarea" placeholder="Write your thoughts here..."></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">How are you feeling?</label>
+                        <div class="flex flex-wrap">
+                            <div class="tag-chip bg-blue-100 text-blue-800" data-tag="calm">Calm</div>
+                            <div class="tag-chip bg-green-100 text-green-800" data-tag="happy">Happy</div>
+                            <div class="tag-chip bg-yellow-100 text-yellow-800" data-tag="anxious">Anxious</div>
+                            <div class="tag-chip bg-red-100 text-red-800" data-tag="stressed">Stressed</div>
+                            <div class="tag-chip bg-purple-100 text-purple-800" data-tag="motivated">Motivated</div>
+                            <div class="tag-chip bg-pink-100 text-pink-800" data-tag="tired">Tired</div>
+                        </div>
+                    </div>
+                    
+                    <button id="save-journal" class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300">
+                        Save Journal Entry
+                    </button>
+                    
+                    <div class="mt-6">
+                        <h3 class="font-medium mb-2">Mood Trends</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <canvas id="mood-chart" height="200"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Weight Tracker -->
+                <section id="weight-tracker" class="section">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Weight Tracker</h2>
+                    
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <input type="number" id="weight-input" class="weight-input" step="0.1" min="0" placeholder="Enter weight">
+                            <div class="unit-selector ml-2">
+                                <div class="unit-option selected" data-unit="kg">kg</div>
+                                <div class="unit-option" data-unit="lb">lb</div>
+                            </div>
+                        </div>
+                        
+                        <button id="log-weight" class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300">
+                            Log Weight
+                        </button>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <canvas id="weight-chart" height="200"></canvas>
+                    </div>
+                </section>
+
+                <!-- Health Dashboard -->
+                <section id="health-dashboard" class="section">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Health Dashboard</h2>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="dashboard-card">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-medium">Sleep</h3>
+                                <div class="flex items-center">
+                                    <div class="spinner mr-1"></div>
+                                    <span class="text-xs text-gray-600">Syncing</span>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold">7.2h</p>
+                            <p class="text-sm text-gray-600">Avg. last week</p>
+                        </div>
+                        
+                        <div class="dashboard-card">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-medium">Steps</h3>
+                                <div class="flex items-center">
+                                    <span class="text-xs text-gray-600">Today</span>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold">5,842</p>
+                            <p class="text-sm text-green-600">+12% from avg.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-medium">Heart Rate</h3>
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <canvas id="heart-rate-chart" height="100"></canvas>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-medium mb-2">Health Metrics</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-600">Resting HR</p>
+                                <p class="font-bold">68 bpm</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Blood Pressure</p>
+                                <p class="font-bold">120/80</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Avg. Sleep</p>
+                                <p class="font-bold">7.5h</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Calories</p>
+                                <p class="font-bold">1,850</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div id="confetti-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all modules
+            initMoodTracker();
+            initWaterTracker();
+            initBreathingExercise();
+            initMealLog();
+            initSleepTracker();
+            initFitnessRoutine();
+            initStretchRoutine();
+            initMentalHealthJournal();
+            initWeightTracker();
+            initHealthDashboard();
+        });
+
+        // Helper function to save data to localStorage
+        function saveData(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+
+        // Helper function to load data from localStorage
+        function loadData(key, defaultValue = null) {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : defaultValue;
+        }
+
+        // Generate confetti effect
+        function createConfetti() {
+            const container = document.getElementById('confetti-container');
+            const colors = ['#4f46e5', '#f97316', '#10b981', '#3b82f6', '#ec4899'];
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                container.appendChild(confetti);
+                
+                // Remove confetti element after animation completes
+                setTimeout(() => {
+                    confetti.remove();
+                }, 3000);
+            }
+        }
+
+        // Format date as YYYY-MM-DD
+        function formatDate(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        // Get current date formatted
+        function getCurrentDate() {
+            return formatDate(new Date());
+        }
+
+        // Mood Tracker Module
+        function initMoodTracker() {
+            const moodEmojis = document.querySelectorAll('.mood-emoji');
+            const prevMonthBtn = document.getElementById('prev-month');
+            const nextMonthBtn = document.getElementById('next-month');
+            const currentMonthEl = document.getElementById('current-month');
+            const calendarDaysEl = document.getElementById('calendar-days');
+            
+            let currentDate = new Date();
+            let currentMonth = currentDate.getMonth();
+            let currentYear = currentDate.getFullYear();
+            
+            // Load saved moods
+            const savedMoods = loadData('moods', {});
+            
+            // Select mood
+            moodEmojis.forEach(emoji => {
+                emoji.addEventListener('click', function() {
+                    // Remove selected class from all emojis
+                    moodEmojis.forEach(e => e.classList.remove('selected'));
+                    
+                    // Add selected class to clicked emoji
+                    this.classList.add('selected');
+                    
+                    // Save mood for today
+                    const today = getCurrentDate();
+                    const mood = {
+                        mood: this.dataset.mood,
+                        value: parseInt(this.dataset.value),
+                        emoji: this.textContent
+                    };
+                    
+                    savedMoods[today] = mood;
+                    saveData('moods', savedMoods);
+                    
+                    // Update calendar
+                    renderCalendar();
+                    
+                    // Animate emoji
+                    gsap.from(this, { scale: 1.5, duration: 0.3, ease: "back.out(1.7)" });
+                });
+            });
+            
+            // Navigate through months
+            prevMonthBtn.addEventListener('click', function() {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                renderCalendar();
+            });
+            
+            nextMonthBtn.addEventListener('click', function() {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                renderCalendar();
+            });
+            
+            // Render calendar
+            function renderCalendar() {
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                
+                // Update month and year display
+                currentMonthEl.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+                
+                // Clear previous calendar days
+                calendarDaysEl.innerHTML = '';
+                
+                // Get first day of month and total days in month
+                const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+                const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+                
+                // Add empty cells for days before the first day of the month
+                for (let i = 0; i < firstDay; i++) {
+                    const emptyDay = document.createElement('div');
+                    calendarDaysEl.appendChild(emptyDay);
+                }
+                
+                // Add days of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayEl = document.createElement('div');
+                    dayEl.className = 'calendar-day bg-gray-100';
+                    dayEl.textContent = day;
+                    
+                    // Format date to check if mood exists for this day
+                    const dateStr = formatDate(new Date(currentYear, currentMonth, day));
+                    const moodForDay = savedMoods[dateStr];
+                    
+                    if (moodForDay) {
+                        // Add mood data
+                        dayEl.innerHTML = `${day}<div>${moodForDay.emoji}</div>`;
+                        
+                        // Add tooltip
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'calendar-tooltip';
+                        tooltip.textContent = `${moodForDay.mood.charAt(0).toUpperCase() + moodForDay.mood.slice(1)}`;
+                        dayEl.appendChild(tooltip);
+                        
+                        // Color based on mood value (1-5)
+                        const colors = [
+                            'bg-red-100 border-red-300',       // Terrible
+                            'bg-orange-100 border-orange-300', // Sad
+                            'bg-yellow-100 border-yellow-300', // Neutral
+                            'bg-blue-100 border-blue-300',     // Good
+                            'bg-green-100 border-green-300'    // Great
+                        ];
+                        
+                        dayEl.className = `calendar-day ${colors[moodForDay.value - 1]}`;
+                    }
+                    
+                    // Highlight today
+                    if (currentMonth === new Date().getMonth() && 
+                        currentYear === new Date().getFullYear() && 
+                        day === new Date().getDate()) {
+                        dayEl.classList.add('ring-2', 'ring-indigo-500');
+                    }
+                    
+                    calendarDaysEl.appendChild(dayEl);
+                }
+            }
+            
+            // Initialize calendar
+            renderCalendar();
+        }
+
+        // Water Intake Tracker Module
+        function initWaterTracker() {
+            const waterCups = document.querySelectorAll('.water-cup');
+            const waterCount = document.getElementById('water-count');
+            const progressRingCircle = document.getElementById('progress-ring-circle');
+            
+            // Calculate circumference of progress ring
+            const radius = progressRingCircle.getAttribute('r');
+            const circumference = 2 * Math.PI * radius;
+            progressRingCircle.style.strokeDasharray = circumference;
+            
+            // Set initial stroke-dashoffset
+            function setProgress(percent) {
+                const offset = circumference - (percent / 100 * circumference);
+                progressRingCircle.style.strokeDashoffset = offset;
+            }
+            
+            // Load saved water intake
+            const today = getCurrentDate();
+            const savedWaterData = loadData('waterIntake', {});
+            const todayWater = savedWaterData[today] || 0;
+            
+            // Update UI with saved data
+            updateWaterUI(todayWater);
+            
+            // Add click event to water cups
+            waterCups.forEach(cup => {
+                cup.addEventListener('click', function() {
+                    const cupIndex = parseInt(this.getAttribute('data-cup'));
+                    const today = getCurrentDate();
+                    
+                    // Toggle cup fill
+                    if (todayWater >= cupIndex) {
+                        // Unfill this cup and all after it
+                        savedWaterData[today] = cupIndex - 1;
+                    } else {
+                        // Fill this cup
+                        savedWaterData[today] = cupIndex;
+                    }
+                    
+                    // Save to localStorage
+                    saveData('waterIntake', savedWaterData);
+                    
+                    // Update UI
+                    updateWaterUI(savedWaterData[today]);
+                    
+                    // Show confetti if goal reached
+                    if (savedWaterData[today] === 8) {
+                        createConfetti();
+                    }
+                });
+            });
+            
+            function updateWaterUI(count) {
+                // Update count display
+                waterCount.textContent = count;
+                
+                // Update progress ring
+                setProgress((count / 8) * 100);
+                
+                // Update cup visuals
+                waterCups.forEach((cup, index) => {
+                    if (index < count) {
+                        cup.classList.add('filled');
+                    } else {
+                        cup.classList.remove('filled');
+                    }
+                });
+            }
+        }
+
+        // Breathing Exercise Module
+        function initBreathingExercise() {
+            const breathingCircle = document.getElementById('breathing-circle');
+            const breathingText = document.getElementById('breathing-text');
+            const startButton = document.getElementById('start-breathing');
+            const breathingBg = document.querySelector('.breathing-bg');
+            const techniques = document.getElementsByName('breathing-technique');
+            
+            let isBreathingActive = false;
+            let breathingInterval;
+            
+            startButton.addEventListener('click', function() {
+                if (isBreathingActive) {
+                    stopBreathingExercise();
+                    startButton.textContent = 'Start Exercise';
+                } else {
+                    startBreathingExercise();
+                    startButton.textContent = 'Stop Exercise';
+                }
+                
+                isBreathingActive = !isBreathingActive;
+            });
+            
+            function startBreathingExercise() {
+                let technique = "box";
+                
+                // Get selected breathing technique
+                techniques.forEach(tech => {
+                    if (tech.checked) {
+                        technique = tech.value;
+                    }
+                });
+                
+                // Define the breathing pattern based on technique
+                let pattern = [];
+                
+                if (technique === "box") {
+                    // Box breathing: Inhale 4s, Hold 4s, Exhale 4s, Hold 4s
+                    pattern = [
+                        { action: "inhale", duration: 4000, text: "Inhale" },
+                        { action: "hold", duration: 4000, text: "Hold" },
+                        { action: "exhale", duration: 4000, text: "Exhale" },
+                        { action: "hold", duration: 4000, text: "Hold" }
+                    ];
+                } else if (technique === "478") {
+                    // 4-7-8 breathing: Inhale 4s, Hold 7s, Exhale 8s
+                    pattern = [
+                        { action: "inhale", duration: 4000, text: "Inhale" },
+                        { action: "hold", duration: 7000, text: "Hold" },
+                        { action: "exhale", duration: 8000, text: "Exhale" }
+                    ];
+                } else if (technique === "calm") {
+                    // Calm breathing: Inhale 4s, Exhale 6s
+                    pattern = [
+                        { action: "inhale", duration: 4000, text: "Inhale" },
+                        { action: "exhale", duration: 6000, text: "Exhale" }
+                    ];
+                }
+                
+                let currentStepIndex = 0;
+                
+                function performBreathingStep() {
+                    if (!isBreathingActive) return;
+                    
+                    const step = pattern[currentStepIndex];
+                    
+                    // Update UI for current step
+                    breathingText.textContent = step.text;
+                    breathingCircle.className = 'breathing-circle ' + step.action;
+                    breathingBg.className = 'breathing-bg section ' + step.action;
+                    
+                    // Move to next step after duration
+                    setTimeout(() => {
+                        currentStepIndex = (currentStepIndex + 1) % pattern.length;
+                        performBreathingStep();
+                    }, step.duration);
+                }
+                
+                // Start the breathing exercise
+                performBreathingStep();
+            }
+            
+            function stopBreathingExercise() {
+                isBreathingActive = false;
+                breathingText.textContent = "Start";
+                breathingCircle.className = 'breathing-circle';
+                breathingBg.className = 'breathing-bg section';
+            }
+        }
+
+        // Meal Log Module
+        function initMealLog() {
+            const mealForm = document.getElementById('meal-form');
+            const mealListEl = document.getElementById('meal-list');
+            const caloriesConsumedEl = document.getElementById('calories-consumed');
+            const caloriesRemainingEl = document.getElementById('calories-remaining');
+            const calorieGoalEl = document.getElementById('calorie-goal');
+            
+            // Load saved meals and calorie goal
+            const today = getCurrentDate();
+            const savedMeals = loadData('meals', {});
+            const todayMeals = savedMeals[today] || [];
+            const calorieGoal = loadData('calorieGoal', 2000);
+            
+            // Update UI with saved data
+            calorieGoalEl.textContent = calorieGoal;
+            renderMeals();
+            
+            // Add meal event
+            mealForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const mealName = document.getElementById('meal-name').value;
+                const mealCalories = parseInt(document.getElementById('meal-calories').value);
+                const mealTime = document.getElementById('meal-time').value;
+                const mealType = document.getElementById('meal-type').value;
+                
+                // Get emoji for meal type
+                const typeEmojis = {
+                    breakfast: '🍳',
+                    lunch: '🥗',
+                    dinner: '🍽️',
+                    snack: '🍎'
+                };
+                
+                // Create meal object
+                const meal = {
+                    name: mealName,
+                    calories: mealCalories,
+                    time: mealTime,
+                    type: mealType,
+                    emoji: typeEmojis[mealType],
+                    timestamp: Date.now()
+                };
+                
+                // Get today's meals or initialize empty array
+                const today = getCurrentDate();
+                savedMeals[today] = savedMeals[today] || [];
+                
+                // Add new meal
+                savedMeals[today].push(meal);
+                
+                // Save to localStorage
+                saveData('meals', savedMeals);
+                
+                // Reset form
+                mealForm.reset();
+                
+                // Update UI
+                renderMeals();
+            });
+            
+            function renderMeals() {
+                // Clear meal list
+                mealListEl.innerHTML = '';
+                
+                // Get today's meals
+                const today = getCurrentDate();
+                const todayMeals = savedMeals[today] || [];
+                
+                // Sort meals by time
+                todayMeals.sort((a, b) => {
+                    return a.timestamp - b.timestamp;
+                });
+                
+                // Calculate total calories
+                let totalCalories = 0;
+                
+                // Add each meal to the list
+                todayMeals.forEach((meal, index) => {
+                    totalCalories += meal.calories;
+                    
+                    const mealEl = document.createElement('div');
+                    mealEl.className = 'meal-card';
+                    
+                    // If it's a new meal (last one added), add 'new' class for animation
+                    if (index === todayMeals.length - 1 && todayMeals.length > 0) {
+                        mealEl.classList.add('new');
+                    }
+                    
+                    mealEl.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-medium">${meal.name} ${meal.emoji}</h3>
+                                <p class="text-sm text-gray-600">${formatMealTime(meal.time)}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold">${meal.calories} cal</p>
+                                <p class="text-sm text-gray-600">${meal.type}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    mealListEl.appendChild(mealEl);
+                });
+                
+                // Update calorie counters
+                animateCalorieCounter(caloriesConsumedEl, totalCalories);
+                animateCalorieCounter(caloriesRemainingEl, calorieGoal - totalCalories);
+                
+                // Change color based on remaining calories
+                if (calorieGoal - totalCalories < 0) {
+                    caloriesRemainingEl.classList.add('text-red-600');
+                    caloriesRemainingEl.classList.remove('text-green-600');
+                } else {
+                    caloriesRemainingEl.classList.add('text-green-600');
+                    caloriesRemainingEl.classList.remove('text-red-600');
+                }
+            }
+            
+            function formatMealTime(timeString) {
+                if (!timeString) return '';
+                
+                const [hours, minutes] = timeString.split(':');
+                const hour = parseInt(hours);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const hour12 = hour % 12 || 12;
+                
+                return `${hour12}:${minutes} ${ampm}`;
+            }
+            
+            function animateCalorieCounter(element, targetValue) {
+                const startValue = parseInt(element.textContent);
+                const duration = 1000; // 1 second
+                const stepTime = 20; // Update every 20ms
+                const steps = duration / stepTime;
+                const increment = (targetValue - startValue) / steps;
+                
+                let currentValue = startValue;
+                let currentStep = 0;
+                
+                const counterInterval = setInterval(() => {
+                    currentStep++;
+                    currentValue += increment;
+                    
+                    if (currentStep >= steps) {
+                        clearInterval(counterInterval);
+                        currentValue = targetValue;
+                    }
+                    
+                    element.textContent = Math.round(currentValue);
+                }, stepTime);
+            }
+        }
+
+        // Sleep Tracker Module
+        function initSleepTracker() {
+            const sleepForm = document.getElementById('sleep-form');
+            const sleepChart = document.getElementById('sleep-chart');
+            
+            // Load saved sleep data
+            const savedSleepData = loadData('sleep', {});
+            
+            // Update sleep chart
+            renderSleepChart();
+            
+            // Add sleep log event
+            sleepForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const sleepHours = parseFloat(document.getElementById('sleep-hours').value);
+                const sleepQuality = document.getElementById('sleep-quality').value;
+                
+                // Create sleep entry
+                const sleepEntry = {
+                    hours: sleepHours,
+                    quality: sleepQuality,
+                    date: getCurrentDate()
+                };
+                
+                // Save to localStorage
+                savedSleepData[getCurrentDate()] = sleepEntry;
+                saveData('sleep', savedSleepData);
+                
+                // Reset form
+                sleepForm.reset();
+                
+                // Update sleep chart
+                renderSleepChart();
+            });
+            
+            function renderSleepChart() {
+                // Clear sleep chart
+                sleepChart.innerHTML = '';
+                
+                // Get data for the last 7 days
+                const days = getLast7Days();
+                
+                days.forEach(day => {
+                    const sleepData = savedSleepData[day.dateStr] || null;
+                    
+                    const dayEl = document.createElement('div');
+                    dayEl.className = 'sleep-day';
+                    
+                    if (sleepData) {
+                        // Set height based on sleep hours (max 12 hours = 100% height)
+                        const heightPercent = Math.min((sleepData.hours / 12) * 100, 100);
+                        dayEl.style.height = `${heightPercent}%`;
+                        
+                        // Set color based on sleep quality
+                        const qualityColors = {
+                            excellent: 'bg-gradient-to-b from-indigo-500 to-purple-500',
+                            good: 'bg-gradient-to-b from-blue-500 to-indigo-500',
+                            fair: 'bg-gradient-to-b from-green-500 to-blue-500',
+                            poor: 'bg-gradient-to-b from-yellow-500 to-orange-500',
+                            terrible: 'bg-gradient-to-b from-red-500 to-pink-500'
+                        };
+                        
+                        dayEl.classList.add(qualityColors[sleepData.quality] || 'bg-gray-300');
+                        
+                        // Add tooltip
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'sleep-tooltip';
+                        tooltip.textContent = `${sleepData.hours} hours (${sleepData.quality})`;
+                        dayEl.appendChild(tooltip);
+                    } else {
+                        dayEl.classList.add('bg-gray-200');
+                        dayEl.style.height = '10%';
+                    }
+                    
+                    sleepChart.appendChild(dayEl);
+                });
+            }
+            
+            function getLast7Days() {
+                const result = [];
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    
+                    result.push({
+                        day: days[date.getDay()],
+                        dateStr: formatDate(date)
+                    });
+                }
+                
+                return result;
+            }
+        }
+
+        // Fitness Routine Module
+        function initFitnessRoutine() {
+            const fitnessItems = document.querySelectorAll('.fitness-item');
+            const startWorkoutBtn = document.getElementById('start-workout');
+            const workoutProgressContainer = document.getElementById('workout-progress-container');
+            const workoutProgressFill = document.querySelector('.workout-progress-fill');
+            const workoutProgressText = document.getElementById('workout-progress-text');
+            
+            let isWorkoutActive = false;
+            let currentExerciseIndex = 0;
+            let workoutInterval;
+            
+            // Checkbox event listeners
+            fitnessItems.forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        item.classList.add('completed');
+                    } else {
+                        item.classList.remove('completed');
+                    }
+                    
+                    // Save state to localStorage
+                    saveFitnessState();
+                });
+            });
+            
+            // Start workout button event
+            startWorkoutBtn.addEventListener('click', function() {
+                if (isWorkoutActive) {
+                    stopWorkout();
+                    startWorkoutBtn.textContent = 'Start Workout';
+                    workoutProgressContainer.classList.add('hidden');
+                } else {
+                    startWorkout();
+                    startWorkoutBtn.textContent = 'Stop Workout';
+                    workoutProgressContainer.classList.remove('hidden');
+                }
+                
+                isWorkoutActive = !isWorkoutActive;
+            });
+            
+            // Load saved fitness state
+            loadFitnessState();
+            
+            function saveFitnessState() {
+                const fitnessState = Array.from(fitnessItems).map(item => {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    return {
+                        completed: checkbox.checked
+                    };
+                });
+                
+                saveData('fitnessState', fitnessState);
+            }
+            
+            function loadFitnessState() {
+                const savedState = loadData('fitnessState', []);
+                
+                if (savedState.length === fitnessItems.length) {
+                    fitnessItems.forEach((item, index) => {
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        checkbox.checked = savedState[index].completed;
+                        
+                        if (checkbox.checked) {
+                            item.classList.add('completed');
+                        }
+                    });
+                }
+            }
+            
+            function startWorkout() {
+                // Reset all exercises
+                fitnessItems.forEach(item => {
+                    const timerFill = item.querySelector('.timer-fill');
+                    timerFill.style.transform = 'scale(0)';
+                    item.classList.remove('active');
+                });
+                
+                // Start with first exercise
+                currentExerciseIndex = 0;
+                startExerciseTimer();
+                
+                // Update progress
+                updateWorkoutProgress();
+            }
+            
+            function startExerciseTimer() {
+                if (currentExerciseIndex >= fitnessItems.length) {
+                    // Workout complete
+                    stopWorkout();
+                    startWorkoutBtn.textContent = 'Start Workout';
+                    isWorkoutActive = false;
+                    return;
+                }
+                
+                const currentExercise = fitnessItems[currentExerciseIndex];
+                currentExercise.classList.add('active');
+                
+                // Scroll exercise into view
+                currentExercise.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                const duration = parseInt(currentExercise.dataset.duration) * 1000;
+                const timerFill = currentExercise.querySelector('.timer-fill');
+                
+                // Animate timer fill
+                timerFill.style.transition = `transform ${duration/1000}s linear`;
+                timerFill.style.transform = 'scale(1)';
+                
+                // Move to next exercise after timer completes
+                setTimeout(() => {
+                    // Mark as completed
+                    const checkbox = currentExercise.querySelector('input[type="checkbox"]');
+                    checkbox.checked = true;
+                    currentExercise.classList.add('completed');
+                    
+                    // Save state
+                    saveFitnessState();
+                    
+                    // Move to next exercise
+                    currentExerciseIndex++;
+                    updateWorkoutProgress();
+                    
+                    if (isWorkoutActive) {
+                        startExerciseTimer();
+                    }
+                }, duration);
+            }
+            
+            function stopWorkout() {
+                isWorkoutActive = false;
+                
+                // Stop all animations
+                fitnessItems.forEach(item => {
+                    item.classList.remove('active');
+                    const timerFill = item.querySelector('.timer-fill');
+                    timerFill.style.transition = 'none';
+                    timerFill.style.transform = 'scale(0)';
+                });
+            }
+            
+            function updateWorkoutProgress() {
+                const totalExercises = fitnessItems.length;
+                const progressPercent = (currentExerciseIndex / totalExercises) * 100;
+                
+                workoutProgressFill.style.width = `${progressPercent}%`;
+                workoutProgressText.textContent = `${currentExerciseIndex}/${totalExercises}`;
+            }
+        }
+
+        // Stretch Routine Module
+        function initStretchRoutine() {
+            const stretchList = document.getElementById('stretch-list');
+            const startStretchBtn = document.getElementById('start-stretch');
+            
+            // Initialize SortableJS for drag-and-drop
+            new Sortable(stretchList, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onEnd: function() {
+                    // Save new order to localStorage
+                    saveStretchOrder();
+                }
+            });
+            
+            // Load saved stretch order
+            loadStretchOrder();
+            
+            // Start stretch routine button event
+            startStretchBtn.addEventListener('click', function() {
+                startStretchRoutine();
+            });
+            
+            function saveStretchOrder() {
+                const stretchItems = Array.from(stretchList.children);
+                const order = stretchItems.map(item => {
+                    return {
+                        title: item.querySelector('h3').textContent,
+                        duration: parseInt(item.dataset.duration)
+                    };
+                });
+                
+                saveData('stretchOrder', order);
+            }
+            
+            function loadStretchOrder() {
+                const savedOrder = loadData('stretchOrder', null);
+                
+                if (savedOrder) {
+                    // Clear existing items
+                    stretchList.innerHTML = '';
+                    
+                    // Add items in saved order
+                    savedOrder.forEach(stretch => {
+                        const stretchEl = document.createElement('div');
+                        stretchEl.className = 'stretch-item';
+                        stretchEl.dataset.duration = stretch.duration;
+                        
+                        stretchEl.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="font-medium">${stretch.title}</h3>
+                                    <p class="text-sm text-gray-600">${stretch.duration} seconds</p>
+                                </div>
+                                <i class="bx bx-menu text-gray-400"></i>
+                            </div>
+                        `;
+                        
+                        stretchList.appendChild(stretchEl);
+                    });
+                }
+            }
+            
+            function startStretchRoutine() {
+                const stretchItems = Array.from(stretchList.children);
+                let currentIndex = 0;
+                
+                // Disable drag-and-drop during routine
+                stretchList.classList.add('pointer-events-none');
+                startStretchBtn.disabled = true;
+                startStretchBtn.textContent = 'Routine in Progress...';
+                
+                function performStretch() {
+                    if (currentIndex >= stretchItems.length) {
+                        // Routine complete
+                        stretchList.classList.remove('pointer-events-none');
+                        startStretchBtn.disabled = false;
+                        startStretchBtn.textContent = 'Start Stretch Routine';
+                        return;
+                    }
+                    
+                    const currentStretch = stretchItems[currentIndex];
+                    const duration = parseInt(currentStretch.dataset.duration) * 1000;
+                    
+                    // Highlight current stretch
+                    stretchItems.forEach(item => item.classList.remove('bg-green-50', 'border-green-300'));
+                    currentStretch.classList.add('bg-green-50', 'border-green-300');
+                    
+                    // Scroll to current stretch
+                    currentStretch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Update button text with countdown
+                    const startTime = Date.now();
+                    const endTime = startTime + duration;
+                    
+                    const countdownInterval = setInterval(() => {
+                        const remaining = Math.ceil((endTime - Date.now()) / 1000);
+                        startStretchBtn.textContent = `${currentStretch.querySelector('h3').textContent} - ${remaining}s`;
+                        
+                        if (remaining <= 0) {
+                            clearInterval(countdownInterval);
+                            currentIndex++;
+                            performStretch();
+                        }
+                    }, 100);
+                }
+                
+                // Start the routine
+                performStretch();
+            }
+        }
+
+        // Mental Health Journal Module
+        function initMentalHealthJournal() {
+            const journalTextarea = document.getElementById('journal-text');
+            const tagChips = document.querySelectorAll('.tag-chip');
+            const saveJournalBtn = document.getElementById('save-journal');
+            const moodChartCanvas = document.getElementById('mood-chart');
+            
+            let selectedTags = [];
+            let moodChart;
+            
+            // Load saved journal entries
+            const savedJournalEntries = loadData('journalEntries', []);
+            
+            // Initialize mood chart
+            initMoodChart();
+            
+            // Tag selection
+            tagChips.forEach(chip => {
+                chip.addEventListener('click', function() {
+                    const tag = this.dataset.tag;
+                    
+                    if (selectedTags.includes(tag)) {
+                        // Remove tag
+                        selectedTags = selectedTags.filter(t => t !== tag);
+                        this.classList.remove('selected');
+                    } else {
+                        // Add tag
+                        selectedTags.push(tag);
+                        this.classList.add('selected');
+                    }
+                    
+                    // Animate chip
+                    gsap.from(this, { y: -5, duration: 0.3, ease: "back.out(1.7)" });
+                });
+            });
+            
+            // Save journal entry
+            saveJournalBtn.addEventListener('click', function() {
+                const text = journalTextarea.value.trim();
+                
+                if (text === '' && selectedTags.length === 0) {
+                    alert('Please write something or select at least one tag.');
+                    return;
+                }
+                
+                // Create journal entry
+                const entry = {
+                    date: getCurrentDate(),
+                    timestamp: Date.now(),
+                    text: text,
+                    tags: [...selectedTags]
+                };
+                
+                // Add to saved entries
+                savedJournalEntries.push(entry);
+                
+                // Save to localStorage
+                saveData('journalEntries', savedJournalEntries);
+                
+                // Reset form
+                journalTextarea.value = '';
+                selectedTags = [];
+                tagChips.forEach(chip => chip.classList.remove('selected'));
+                
+                // Update mood chart
+                updateMoodChart();
+                
+                // Show success message
+                alert('Journal entry saved!');
+            });
+            
+            function initMoodChart() {
+                const ctx = moodChartCanvas.getContext('2d');
+                
+                moodChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            data: [],
+                            backgroundColor: [
+                                '#93c5fd', // calm (blue)
+                                '#86efac', // happy (green)
+                                '#fcd34d', // anxious (yellow)
+                                '#fca5a5', // stressed (red)
+                                '#c4b5fd', // motivated (purple)
+                                '#f9a8d4'  // tired (pink)
+                            ],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Mood Distribution'
+                            },
+                            animation: {
+                                animateScale: true,
+                                animateRotate: true
+                            }
+                        }
+                    }
+                });
+                
+                // Update with saved data
+                updateMoodChart();
+            }
+            
+            function updateMoodChart() {
+                // Count occurrences of each tag
+                const tagCounts = {};
+                
+                savedJournalEntries.forEach(entry => {
+                    entry.tags.forEach(tag => {
+                        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+                    });
+                });
+                
+                // Prepare chart data
+                const labels = Object.keys(tagCounts);
+                const data = Object.values(tagCounts);
+                
+                // Update chart
+                moodChart.data.labels = labels;
+                moodChart.data.datasets[0].data = data;
+                moodChart.update();
+            }
+        }
+
+        // Weight Tracker Module
+        function initWeightTracker() {
+            const weightInput = document.getElementById('weight-input');
+            const unitOptions = document.querySelectorAll('.unit-option');
+            const logWeightBtn = document.getElementById('log-weight');
+            const weightChartCanvas = document.getElementById('weight-chart');
+            
+            let selectedUnit = 'kg';
+            let weightChart;
+            
+            // Load saved weight entries
+            const savedWeightEntries = loadData('weightEntries', []);
+            
+            // Initialize weight chart
+            initWeightChart();
+            
+            // Unit selector
+            unitOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    unitOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedUnit = this.dataset.unit;
+                });
+            });
+            
+            // Log weight event
+            logWeightBtn.addEventListener('click', function() {
+                const weight = parseFloat(weightInput.value);
+                
+                if (isNaN(weight) || weight <= 0) {
+                    alert('Please enter a valid weight.');
+                    return;
+                }
+                
+                // Convert to kg for storage if needed
+                const weightInKg = selectedUnit === 'lb' ? weight * 0.453592 : weight;
+                
+                // Create weight entry
+                const entry = {
+                    date: getCurrentDate(),
+                    timestamp: Date.now(),
+                    weight: weightInKg,
+                    displayWeight: weight,
+                    unit: selectedUnit
+                };
+                
+                // Add to saved entries
+                savedWeightEntries.push(entry);
+                
+                // Save to localStorage
+                saveData('weightEntries', savedWeightEntries);
+                
+                // Reset input
+                weightInput.value = '';
+                
+                // Update weight chart
+                updateWeightChart();
+            });
+            
+            function initWeightChart() {
+                const ctx = weightChartCanvas.getContext('2d');
+                
+                weightChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Weight',
+                            data: [],
+                            backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                            borderColor: 'rgba(79, 70, 229, 1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        animation: {
+                            duration: 1500
+                        }
+                    }
+                });
+                
+                // Update with saved data
+                updateWeightChart();
+            }
+            
+            function updateWeightChart() {
+                if (savedWeightEntries.length === 0) return;
+                
+                // Sort entries by timestamp
+                const sortedEntries = [...savedWeightEntries].sort((a, b) => a.timestamp - b.timestamp);
+                
+                // Get last 10 entries
+                const lastEntries = sortedEntries.slice(-10);
+                
+                // Prepare chart data
+                const labels = lastEntries.map(entry => {
+                    const date = new Date(entry.timestamp);
+                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                });
+                
+                const data = lastEntries.map(entry => {
+                    // Use the original unit for display
+                    return entry.displayWeight;
+                });
+                
+                // Update chart
+                weightChart.data.labels = labels;
+                weightChart.data.datasets[0].data = data;
+                weightChart.options.scales.y.title = {
+                    display: true,
+                    text: lastEntries[lastEntries.length - 1].unit
+                };
+                weightChart.update();
+            }
+        }
+
+        // Health Dashboard Module
+        function initHealthDashboard() {
+            const heartRateChartCanvas = document.getElementById('heart-rate-chart');
+            let heartRateChart;
+            
+            // Initialize heart rate chart
+            initHeartRateChart();
+            
+            // Simulate data sync
+            simulateDataSync();
+            
+            function initHeartRateChart() {
+                const ctx = heartRateChartCanvas.getContext('2d');
+                
+                heartRateChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['1h', '2h', '3h', '4h', '5h', '6h', '7h', '8h'],
+                        datasets: [{
+                            label: 'Heart Rate',
+                            data: [72, 68, 70, 75, 90, 85, 76, 72],
+                            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true,
+                            pointRadius: 2,
+                            pointHoverRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 60,
+                                max: 100
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        animation: {
+                            duration: 1000
+                        }
+                    }
+                });
+            }
+            
+            function simulateDataSync() {
+                const spinners = document.querySelectorAll('.spinner');
+                
+                // Hide spinners after 2 seconds
+                setTimeout(() => {
+                    spinners.forEach(spinner => {
+                        spinner.style.display = 'none';
+                        spinner.nextElementSibling.textContent = 'Updated';
+                    });
+                }, 2000);
+            }
+        }
+    </script>
+</body>
+</html>
